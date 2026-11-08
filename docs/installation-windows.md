@@ -23,72 +23,101 @@ Other Polaris GPUs are not yet confirmed compatible.
 
 ## 2. Obtain the project
 
-Clone this repository:
+Open **Windows PowerShell** in the folder where you want to keep both repositories.
 
+Clone this project:
+
+```powershell
 git clone https://github.com/sempreverde106-sketch/Polaris-UMT5-ComfyUI-Bridge.git
+```
 
-Clone llama.cpp:
+> While this repository is private, cloning requires authorized GitHub access.
 
+Clone upstream llama.cpp:
+
+```powershell
 git clone https://github.com/ggml-org/llama.cpp.git
+```
 
-Checkout the tested llama.cpp revision:
+Checkout the **exact tested revision**:
 
+```powershell
 git -C llama.cpp checkout 55ac0909e
+```
 
 ## 3. Apply the patches
 
-Run these commands from the directory containing both repositories:
+Run these commands from the **parent directory** containing both repositories.
 
+Check both patches **without applying changes**:
+
+```powershell
 git -C llama.cpp apply --check Polaris-UMT5-ComfyUI-Bridge/patches/polaris-vulkan.patch
-
 git -C llama.cpp apply --check Polaris-UMT5-ComfyUI-Bridge/patches/umt5-server-encoder.patch
+```
 
-Both checks must succeed before proceeding.
+Both checks must finish without an error. Then apply them:
 
-Apply the patches:
-
+```powershell
 git -C llama.cpp apply Polaris-UMT5-ComfyUI-Bridge/patches/polaris-vulkan.patch
-
 git -C llama.cpp apply Polaris-UMT5-ComfyUI-Bridge/patches/umt5-server-encoder.patch
+```
+
+Confirm only the expected upstream source files changed:
+
+```powershell
+git -C llama.cpp diff --stat
+```
+
+Expected modified files: `ggml/src/ggml-vulkan/ggml-vulkan.cpp` and `tools/server/server-context.cpp`.
 
 ## 4. Build llama.cpp with Vulkan
 
-Run from the directory containing the llama.cpp folder:
+Run from the **parent directory** containing the `llama.cpp` folder, with Visual Studio's C++ workload and the Vulkan SDK installed:
 
+```powershell
 cmake -S llama.cpp -B llama.cpp/build-polaris -G "Visual Studio 17 2022" -A x64 -DGGML_VULKAN=ON -DLLAMA_BUILD_SERVER=ON
+```
 
-cmake --build llama.cpp/build-polaris --config Release --target llama-server
+Build the server:
 
-Expected executable:
+```powershell
+cmake --build llama.cpp/build-polaris --config Release --target llama-server --parallel 4
+```
 
-llama.cpp/build-polaris/bin/Release/llama-server.exe
+Check the executable (its dependencies are in the build output as well):
+
+```powershell
+& ".\llama.cpp\build-polaris\bin\Release\llama-server.exe" --version
+```
+
+Expected executable: `llama.cpp/build-polaris/bin/Release/llama-server.exe`.
 
 If CMake cannot find Vulkan, verify that the Vulkan SDK is installed
 and the VULKAN_SDK environment variable is configured.
 
 ## 5. Select the Vulkan GPU
 
-Check the Vulkan devices reported by llama.cpp.
+Check the Vulkan devices reported by the patched server and its startup logs.
 
 On the tested computer:
 
-Vulkan0 = Radeon RX 6950 XT
-Vulkan1 = Radeon RX 480
+- `Vulkan0` = Radeon RX 6950 XT
+- `Vulkan1` = Radeon RX 480
 
-Device numbering is system-dependent.
-Do not assume that Vulkan1 is the Polaris GPU on another computer.
+Device numbering is **system-dependent**. Do not assume that `Vulkan1` is the Polaris GPU on another computer; confirm the device name before loading the model.
 
 ## 6. Start the UMT5 server
 
-Use scripts/Start-UMT5-Polaris.ps1.
+Download the UMT5-XXL GGUF model separately from [city96 on Hugging Face](https://huggingface.co/city96/umt5-xxl-encoder-gguf). The tested file is `umt5-xxl-encoder-Q5_K_M.gguf`; model weights are **not included** here.
 
-Example from the project root:
+Use `scripts/Start-UMT5-Polaris.ps1` from the **project repository root**. Replace the example paths with the actual locations on your computer:
 
-powershell.exe -ExecutionPolicy Bypass -File ".\scripts\Start-UMT5-Polaris.ps1" -ServerExe "C:\path\to\llama-server.exe" -ModelPath "C:\path\to\umt5-xxl-encoder-Q5_K_M.gguf" -Device Vulkan1 -GpuLayers 12
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\scripts\Start-UMT5-Polaris.ps1" -ServerExe "C:\path\to\llama-server.exe" -ModelPath "C:\path\to\umt5-xxl-encoder-Q5_K_M.gguf" -Device Vulkan1 -GpuLayers 12
+```
 
-Replace the example paths and device with the correct values.
-
-The server listens on 127.0.0.1:8089.
+Leave the server console running. By default it listens **only on localhost**, at `http://127.0.0.1:8089`.
 
 Tested server settings:
 - GPU layers: 12
@@ -103,33 +132,43 @@ Do not expose the server to the public internet.
 
 ## 7. Install the ComfyUI node
 
-Copy:
+Copy the folder `comfyui_nodes/rx480_umt5_bridge` into your ComfyUI `custom_nodes` directory, then restart ComfyUI.
 
-comfyui_nodes/rx480_umt5_bridge
+Search for the node named **RX480 UMT5 Wan Bridge**.
 
-into the ComfyUI custom_nodes directory.
+Use one instance for positive conditioning and another for negative conditioning when required by your workflow.
 
-Restart ComfyUI.
+- Default server URL: `http://127.0.0.1:8089`
+- Default padding: `512` tokens
+- Expected output using default padding: `CONDITIONING` containing a float32 tensor of shape `[1, 512, 4096]` for prompts up to 512 tokens.
 
-Find the node:
+Disconnect the normal UMT5 conditioning nodes when testing the bridge; keep the rest of the workflow identical for comparisons.
 
-RX480 UMT5 Wan Bridge
+## 8. Smoke test: embedding response
 
-Use one instance for positive conditioning and another for negative
-conditioning when required by the workflow.
+With the server running on port `8089`, open **another PowerShell window** and send a short, known test prompt:
 
-Default server URL:
+```powershell
+$body = @{
+    content = 'A futuristic android walking through a neon-lit city.'
+    embd_normalize = -1
+} | ConvertTo-Json -Compress
 
-http://127.0.0.1:8089
+$r = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8089/embeddings' -ContentType 'application/json' -Body $body -TimeoutSec 180
 
-Default padding:
+$tokens = $r[0].embedding.Count
+$dims = $r[0].embedding[0].Count
 
-512 tokens
+if ($tokens -ne 13 -or $dims -ne 4096) {
+    throw "Unexpected result: $tokens tokens x $dims dimensions"
+}
 
-The node returns CONDITIONING containing a float32 tensor
-with shape [1, 512, 4096] when using the default padding.
+Write-Host "OK: $tokens tokens x $dims dimensions" -ForegroundColor Green
+```
 
-## 8. Verified results
+Expected: `OK: 13 tokens x 4096 dimensions` with the tested model and prompt. This only checks the **shape**, not numerical accuracy or long-term stability.
+
+## 9. Verified results
 
 Tested with UMT5-XXL Q5_K_M on an RX 480 8GB.
 
@@ -142,7 +181,7 @@ Tested with UMT5-XXL Q5_K_M on an RX 480 8GB.
 
 These are measurements from a single system and workflow.
 
-## 9. Known limitations
+## 10. Known limitations
 
 - Offloading 25 or more GPU layers caused Vulkan ErrorDeviceLost
   during repeated long-prompt tests on the RX 480.
@@ -152,7 +191,7 @@ These are measurements from a single system and workflow.
   require independent testing.
 - Model files are not distributed in this repository.
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 If the server does not start:
 - Verify the model path.
