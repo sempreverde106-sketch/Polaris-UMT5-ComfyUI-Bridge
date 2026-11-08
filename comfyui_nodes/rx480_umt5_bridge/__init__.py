@@ -48,7 +48,7 @@ class RX480UMT5WanBridge:
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise RuntimeError(
                 f"Server UMT5 non raggiungibile all'indirizzo {base}: {exc}. "
-                "Avvia Start-UMT5-RX480.ps1 e verifica che sia sulla RX 480."
+                "Avvia Start-UMT5-Polaris.ps1 e verifica che sia sulla RX 480."
             ) from exc
 
         if not isinstance(response, list) or len(response) != 1 or not isinstance(response[0], dict):
