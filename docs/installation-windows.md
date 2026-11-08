@@ -52,15 +52,15 @@ Run these commands from the **parent directory** containing both repositories.
 Check both patches **without applying changes**:
 
 ```powershell
-git -C llama.cpp apply --check Polaris-UMT5-ComfyUI-Bridge/patches/polaris-vulkan.patch
-git -C llama.cpp apply --check Polaris-UMT5-ComfyUI-Bridge/patches/umt5-server-encoder.patch
+git -C llama.cpp apply --check ../Polaris-UMT5-ComfyUI-Bridge/patches/polaris-vulkan.patch
+git -C llama.cpp apply --check ../Polaris-UMT5-ComfyUI-Bridge/patches/umt5-server-encoder.patch
 ```
 
 Both checks must finish without an error. Then apply them:
 
 ```powershell
-git -C llama.cpp apply Polaris-UMT5-ComfyUI-Bridge/patches/polaris-vulkan.patch
-git -C llama.cpp apply Polaris-UMT5-ComfyUI-Bridge/patches/umt5-server-encoder.patch
+git -C llama.cpp apply ../Polaris-UMT5-ComfyUI-Bridge/patches/polaris-vulkan.patch
+git -C llama.cpp apply ../Polaris-UMT5-ComfyUI-Bridge/patches/umt5-server-encoder.patch
 ```
 
 Confirm only the expected upstream source files changed:
@@ -183,6 +183,8 @@ These are measurements from a single system and workflow.
 
 ## 10. Known limitations
 
+- The Vulkan patch modifies device creation and queue selection in llama.cpp; it is experimental and may affect **other Vulkan GPUs**, not just Polaris. Use a separate build and verify the selected device before testing.
+- Comments in the patch mention RX 570, but **only RX 480 8GB has been validated** in this project.
 - Offloading 25 or more GPU layers caused Vulkan ErrorDeviceLost
   during repeated long-prompt tests on the RX 480.
 - 12 and 24 layers passed the tested repeated-request sequence.
