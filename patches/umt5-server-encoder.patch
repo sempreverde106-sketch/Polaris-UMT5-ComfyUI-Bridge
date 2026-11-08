@@ -1,0 +1,14 @@
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -3116,6 +3116,9 @@ private:
+                 batch.logits   + i,
+             };
+
+-            const int ret = llama_decode(ctx_tgt, batch_view);
++            const int ret = (llama_model_has_encoder(model_tgt) &&
++                 !llama_model_has_decoder(model_tgt))
++    ? llama_encode(ctx_tgt, batch_view)
++    : llama_decode(ctx_tgt, batch_view);
+
+             metrics.on_decoded(slots);
