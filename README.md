@@ -53,10 +53,45 @@ Results are specific to the tested system and workflow. Wider compatibility and 
 - The 12-layer configuration passed repeated-request and video-generation tests, but long-term stability remains under evaluation.
 - Peak system RAM usage remains high during Wan model switching.
 
+## Getting Started
+
+Follow the [Windows Installation Guide](docs/installation-windows.md)
+to build the patched llama.cpp server and configure ComfyUI.
+
+### Required UMT5 Model
+
+Tested model: `umt5-xxl-encoder-Q5_K_M.gguf`
+
+Download from:
+[city96 UMT5-XXL GGUF on Hugging Face](https://huggingface.co/city96/umt5-xxl-encoder-gguf)
+
+Model weights are not included in this repository.
+
 ## Project Status
 
-**Experimental — work in progress.**
+**Experimental — v0.1.0 in preparation.**
 
-Source patches, ComfyUI nodes, installation instructions and reproducible tests will be added after verification.
+The following components are available:
+- Vulkan compatibility patch for AMD Polaris
+- UMT5 encoder support patch for llama.cpp
+- ComfyUI conditioning bridge
+- PowerShell server launcher
+- Windows installation documentation
 
-This project is not affiliated with AMD, ComfyUI, llama.cpp or the Wan model developers.
+The patched server has been successfully rebuilt from
+llama.cpp commit `55ac0909e` and passed 10 consecutive
+embedding requests.
+
+Compatibility with additional GPUs still requires testing.
+
+## Credits
+
+Built using [llama.cpp](https://github.com/ggml-org/llama.cpp).
+
+UMT5-XXL GGUF conversion by
+[city96](https://huggingface.co/city96/umt5-xxl-encoder-gguf).
+
+See [Third-party notices](THIRD_PARTY_NOTICES.md)
+for license information.
+
+This is an independent experimental community project.
