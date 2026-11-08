@@ -47,6 +47,7 @@ Results are specific to the tested system and workflow. Wider compatibility and 
 
 ## Known Limitations
 
+- The Vulkan patch alters device creation and queue selection and may affect other Vulkan GPUs; test it in a separate llama.cpp build.
 - Tested successfully on RX 480 8GB only.
 - The custom llama.cpp encoder modifications are required.
 - Offloading 25 or more GPU layers triggered Vulkan `ErrorDeviceLost` during repeated long-prompt testing.
