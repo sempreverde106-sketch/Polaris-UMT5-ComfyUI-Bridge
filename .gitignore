@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build files
+build/
+build-*/
+*.exe
+*.dll
+*.pdb
+*.obj
+
+# AI models and weights
+*.gguf
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+
+# Local data and logs
+.env
+.env.*
+*.log
+*.dmp
+*.bak*
+
+# Operating system
+Thumbs.db
+.DS_Store
